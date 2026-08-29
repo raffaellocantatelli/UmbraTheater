@@ -26,6 +26,9 @@ async def health():
         "service": "umbra-backend",
         "version": "0.1.0",
         "layers": ["earthquakes", "satellites", "flights", "ships"],
+        # dichiarato qui perche' senza propagatore il layer satelliti non
+        # produce posizioni: meglio saperlo dall'health che dalla mappa
+        "sgp4": feeds.SGP4_DISPONIBILE,
     }
 
 

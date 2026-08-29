@@ -37,6 +37,40 @@ function circle(lat, lon, color, radius, html) {
   }).bindPopup(html);
 }
 
+
+// Come si scrive un conteggio senza mentire.
+//
+// La regola: un layer che non ha dati non vale 0. Prima questa riga diceva
+// `${eq.count ?? 0}`, e quel `?? 0` trasformava "non lo so" in "nessun evento" —
+// che è esattamente il difetto per cui una dashboard OSINT smette di essere
+// utile. Ora un layer senza dato mostra un trattino e il motivo.
+//
+// E un conteggio arrivato al tetto della query non è una misura: il valore
+// reale è `total`, quindi si stampa "≥ N" e si dichiara il tetto.
+const STATI = {
+  errore: "errore",
+  senza_chiave: "senza chiave",
+  senza_propagatore: "senza propagatore",
+};
+
+function riga(nome, d) {
+  const stato = d && d.status;
+  if (stato && stato !== "ok") {
+    const perche = d.error ? ` title="${String(d.error).replace(/"/g, "'")}"` : "";
+    return `<div class="riga"${perche}><span>${nome}</span>` +
+      `<span class="vuoto">— ${STATI[stato] || stato}</span></div>`;
+  }
+  if (!d || d.returned == null) {
+    return `<div class="riga"><span>${nome}</span><span class="vuoto">—</span></div>`;
+  }
+  if (d.truncated) {
+    return `<div class="riga" title="tetto ${d.cap}: la sorgente ne ha mandati ${d.total}">` +
+      `<span>${nome}</span><span class="num">≥ ${d.returned}` +
+      `<i class="tetto">tetto</i></span></div>`;
+  }
+  return `<div class="riga"><span>${nome}</span><span class="num">${d.returned}</span></div>`;
+}
+
 async function j(path) {
   const r = await fetch(`${API}${path}`);
   if (!r.ok) throw new Error(`${path} ${r.status}`);
@@ -72,8 +106,17 @@ async function refresh() {
 
     layers.sat.clearLayers();
     (sat.items || []).forEach((s) => {
+      if (s.lat == null || s.lon == null) return;
       layers.sat.addLayer(
-        circle(s.lat, s.lon, "#7cffc4", 3, `<b>${s.name}</b><br>NORAD ${s.norad_id || "—"}`)
+        circle(
+          s.lat,
+          s.lon,
+          "#7cffc4",
+          3,
+          `<b>${s.name}</b><br>NORAD ${s.norad_id || "—"}<br>` +
+            `quota ${s.altitude_km ?? "?"} km · ${s.speed_kms ?? "?"} km/s<br>` +
+            `<small>SGP4 · elementi del ${s.epoch || "?"}</small>`
+        )
       );
     });
 
@@ -90,13 +133,13 @@ async function refresh() {
       );
     });
 
-    meta.innerHTML = [
-      `terremoti: ${eq.count ?? 0}`,
-      `satelliti: ${sat.count ?? 0}`,
-      `voli: ${flt.count ?? 0}${flt.error ? " (⚠️)" : ""}`,
-      `ais: ${shp.enabled ? "chiave ok" : "disattivo"}`,
-      `agg: ${new Date().toLocaleTimeString()}`,
-    ].join("<br>");
+    meta.innerHTML =
+      [
+        riga("terremoti", eq),
+        riga("satelliti", sat),
+        riga("voli", flt),
+        riga("navi", shp),
+      ].join("") + `<div class="agg">agg: ${new Date().toLocaleTimeString()}</div>`;
     status.textContent = "live";
   } catch (err) {
     status.textContent = "errore backend";
