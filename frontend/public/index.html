@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UmbraTheater</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">◆</span>
+      <div>
+        <strong>UMBRA THEATER</strong>
+        <small>OSINT geospaziale self-hosted</small>
+      </div>
+    </div>
+    <div class="status" id="status">avvio…</div>
+  </header>
+
+  <aside class="panel">
+    <h2>Layer</h2>
+    <label><input type="checkbox" id="ly-eq" checked /> Terremoti USGS</label>
+    <label><input type="checkbox" id="ly-sat" checked /> Satelliti CelesTrak</label>
+    <label><input type="checkbox" id="ly-flt" checked /> Voli OpenSky</label>
+    <label><input type="checkbox" id="ly-shp" /> Navi AIS</label>
+    <hr />
+    <div class="meta" id="meta"></div>
+    <p class="hint">Solo feed pubblici. Il backend fa da proxy. Nessun account.</p>
+  </aside>
+
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
