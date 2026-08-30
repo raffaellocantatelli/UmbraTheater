@@ -48,6 +48,37 @@ docker compose up -d --build
 Il frontend è una mappa Leaflet tema dark-ops con toggle layer, polling e popup.
 Il backend FastAPI fa da proxy: il browser non parla mai diretto con le API esterne.
 
+Le posizioni dei satelliti sono propagate con **SGP4** dagli elementi OMM di CelesTrak
+(pacchetto `sgp4`). Senza quel pacchetto il layer dichiara `senza_propagatore` e non
+disegna niente: non esistono posizioni approssimate da mostrare.
+
+---
+
+## Il contratto delle risposte
+
+Ogni endpoint restituisce la stessa busta. Tre campi contano più degli altri, e
+servono a non far dire alla mappa più di quanto sa:
+
+```json
+{
+  "source":    { "name": "CelesTrak GP", "url": "…", "coverage": "catalogo oggetti attivi" },
+  "status":    "ok",          // oppure errore | senza_chiave | senza_propagatore
+  "total":     16469,         // quanti ne ha mandati la sorgente
+  "returned":  180,           // quanti ne restituiamo
+  "cap":       180,
+  "truncated": true,          // allora il valore vero è `total`, non `returned`
+  "items":     [ … ]
+}
+```
+
+- **`truncated`** — se è vero, il conteggio è arrivato al tetto della query e la UI
+  mostra `≥ 180` con l'etichetta TETTO. Un numero tagliato non è una misura.
+- **`status`** diverso da `ok` → **`total` e `returned` sono `null`, mai `0`.**
+  «Nessun dato» e «nessun evento» sono cose diverse, e un layer spento che stampa
+  `0` è la bugia più facile da mettere su una mappa.
+- **`coverage`** dice che pezzo di mondo copre davvero la sorgente: USGS è
+  magnitudo ≥ 2.5 nelle ultime 24 h, non «tutti i terremoti».
+
 ---
 
 ## Architettura
